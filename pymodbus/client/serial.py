@@ -17,7 +17,7 @@ from pymodbus.utilities import ModbusTransactionState
 
 with contextlib.suppress(ImportError):
     import serial
-
+    from serial.rs485 import RS485Settings
 
 class AsyncModbusSerialClient(ModbusBaseClient):
     """**AsyncModbusSerialClient**.
@@ -40,6 +40,7 @@ class AsyncModbusSerialClient(ModbusBaseClient):
     :param timeout: Timeout for connecting and receiving data, in seconds.
     :param retries: Max number of retries per request.
     :param on_connect_callback: Function that will be called just before a connection attempt.
+    :param rs485_settings: Allow configuring the underlying serial port for RS485 mode.
 
     .. tip::
         **reconnect_delay** doubles automatically with each unsuccessful connect, from
@@ -75,6 +76,8 @@ class AsyncModbusSerialClient(ModbusBaseClient):
         timeout: float = 3,
         retries: int = 3,
         on_connect_callback: Callable[[bool], None] | None = None,
+        rs485_settings: serial.rs485.RS485Settings | None = None,
+        **kwargs
     ) -> None:
         """Initialize Asyncio Modbus Serial Client."""
         if "serial" not in sys.modules:
@@ -94,6 +97,8 @@ class AsyncModbusSerialClient(ModbusBaseClient):
             reconnect_delay=reconnect_delay,
             reconnect_delay_max=reconnect_delay_max,
             timeout_connect=timeout,
+            rs485_settings=rs485_settings,
+            **kwargs
         )
         ModbusBaseClient.__init__(
             self,
@@ -161,6 +166,8 @@ class ModbusSerialClient(ModbusBaseSyncClient):
         reconnect_delay_max: float = 300,
         timeout: float = 3,
         retries: int = 3,
+        rs485_settings: RS485Settings | None = None,
+        **kwargs
     ) -> None:
         """Initialize Modbus Serial Client."""
         self.comm_params = CommParams(
@@ -175,6 +182,8 @@ class ModbusSerialClient(ModbusBaseSyncClient):
             reconnect_delay=reconnect_delay,
             reconnect_delay_max=reconnect_delay_max,
             timeout_connect=timeout,
+            rs485_settings=rs485_settings,
+            **kwargs,
         )
         super().__init__(
             framer,

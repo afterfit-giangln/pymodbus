@@ -61,6 +61,7 @@ from typing import Any
 from pymodbus.logging import Log
 from pymodbus.transport.serialtransport import create_serial_connection
 
+from serial.rs485 import RS485Settings
 
 NULLMODEM_HOST = "__pymodbus_nullmodem"
 
@@ -97,6 +98,9 @@ class CommParams:
     bytesize: int = -1
     parity: str = ''
     stopbits: int = -1
+
+    # RS485
+    rs485_settings: RS485Settings | None = None
 
     @classmethod
     def generate_ssl(
@@ -184,14 +188,15 @@ class ModbusProtocol(asyncio.BaseProtocol):
             self.comm_params.comm_type = CommType.TCP
             parts = host.split(":")
             host, port = parts[1][2:], int(parts[2])
-        self.init_setup_connect_listen(host, port)
+        self.init_setup_connect_listen(host, port, self.comm_params.rs485_settings)
 
-    def init_setup_connect_listen(self, host: str, port: int) -> None:
+    def init_setup_connect_listen(self, host: str, port: int, rs485_settings: RS485Settings | None) -> None:
         """Handle connect/listen handler."""
         if self.comm_params.comm_type == CommType.SERIAL:
             self.call_create = partial(create_serial_connection,
                 self.loop,
                 self.handle_new_connection,
+                rs485_settings,
                 host,
                 baudrate=self.comm_params.baudrate,
                 bytesize=self.comm_params.bytesize,

@@ -16,7 +16,7 @@ class SerialTransport(asyncio.Transport):
 
     force_poll: bool = os.name == "nt"
 
-    def __init__(self, loop, protocol, url, baudrate, bytesize, parity, stopbits, timeout) -> None:
+    def __init__(self, loop, protocol, rs485_settings, *args, **kwargs) -> None:
         """Initialize."""
         super().__init__()
         if "serial" not in sys.modules:
@@ -26,14 +26,22 @@ class SerialTransport(asyncio.Transport):
             )
         self.async_loop = loop
         self.intern_protocol: asyncio.BaseProtocol = protocol
-        self.sync_serial = serial.serial_for_url(url, exclusive=True,
-            baudrate=baudrate, bytesize=bytesize, parity=parity, stopbits=stopbits, timeout=timeout
-)
+        self.sync_serial = self._serial_for_args(rs485_settings, *args, **kwargs)
         self.intern_write_buffer: list[bytes] = []
         self.poll_task: asyncio.Task | None = None
         self._poll_wait_time = 0.0005
         self.sync_serial.timeout = 0
         self.sync_serial.write_timeout = 0
+    
+    def _serial_for_args(self, rs485_settings, *args, **kwargs) -> serial.Serial:
+        sync_serial: serial.Serial
+        if rs485_settings is not None:
+            sync_serial = serial.rs485.RS485(*args, **kwargs)
+            sync_serial.rs485_mode = rs485_settings
+        else:
+            sync_serial = serial.serial_for_url(*args, **kwargs)
+
+        return sync_serial
 
     def setup(self) -> None:
         """Prepare to read/write."""
@@ -162,20 +170,10 @@ class SerialTransport(asyncio.Transport):
                 self.intern_read_ready()
 
 async def create_serial_connection(
-    loop, protocol_factory, url,
-    baudrate=None,
-    bytesize=None,
-    parity=None,
-    stopbits=None,
-    timeout=None,
+    loop, protocol_factory, rs485_settings, *args, **kwargs
 ) -> tuple[asyncio.Transport, asyncio.BaseProtocol]:
     """Create a connection to a new serial port instance."""
     protocol = protocol_factory()
-    transport = SerialTransport(loop, protocol, url,
-                    baudrate,
-                    bytesize,
-                    parity,
-                    stopbits,
-                    timeout)
+    transport = SerialTransport(loop, protocol, rs485_settings, *args, **kwargs)
     loop.call_soon(transport.setup)
     return transport, protocol
