@@ -78,6 +78,7 @@ class ModbusBaseClient(ModbusClientMixin[Awaitable[ModbusResponse]], ModbusProto
                 parity=kwargs.get("parity", None),
                 stopbits=kwargs.get("stopbits", None),
                 handle_local_echo=kwargs.get("handle_local_echo", False),
+                rs485_settings=kwargs.get("rs485_settings", None),
             ),
             False,
         )
